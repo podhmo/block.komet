@@ -8,11 +8,6 @@ def includeme(config):
 
 #util
 
-def get_mapping_function(request_or_registry, provided, name=""):
-    registry = normalize_registry(request_or_registry)
-    provided = normalize_provided(provided)
-    return registry.adapters.lookup(provided, i.IMapping, name)
-
 def get_mapping_function_factory(request_or_registry, name=""):
     registry = normalize_registry(request_or_registry)
     def mapping(provided):

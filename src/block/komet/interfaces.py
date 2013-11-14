@@ -10,15 +10,24 @@ class IFolding(Interface):
         pass
 
 class IProducing(Interface):
-    pass
+    def __call__(template, params):
+        pass
+
+class IParsing(Interface):
+    def __call__(subject):
+        pass
+
+class IRegistering(Interface):
+    def register(name, **kwargs):
+        pass
+
 
 class IMapping(Interface):
-    def __call__(iface, val):
+    def __call__(target):
         pass
 
 class ITarget(Interface):
     pass
-
 
 ## types
 class IType(Interface):
