@@ -32,9 +32,9 @@ def setup_database(config):
     session.commit()
 
 def session_factory():
-    return Session()
+    return Session() #buggy
 
-def setup_views(config):
+def setup_resource_factory(config):
     from block.komet.sqla import (
         MapperWalking, 
         ColumnsWalkingTemplate, 
@@ -43,82 +43,43 @@ def setup_views(config):
     from block.komet.mapping import (
         get_mapping_function_factory
     )
-    from block.komet.pyramid.registering import (
-        ViewCategorySetRegister, 
-        ViewCategoryRegister, 
-        ViewRegister
-    )
     from block.komet.pyramid.resources import (
         KometResourceFactory
     )
+    json_mapping = get_mapping_function_factory(config, name="json")
+    walking = MapperWalking(ColumnsWalkingTemplate, json_mapping)
+    producing = ModelProducing(session_factory)
+    config.register_resource_factory(KometResourceFactory(producing, walking))
+
+def setup_views(config):
     from block.komet.pyramid.views import (
         OneModelViewFactory
     )
-
-    json_mapping = get_mapping_function_factory(config, name="json")
-
-    walking = MapperWalking(ColumnsWalkingTemplate, json_mapping)
-    producing = ModelProducing(session_factory)
-    resource_factory = KometResourceFactory(producing, walking)
-
-    ## todo suppress import.
-    def parsing(request):
-        return request.matchdict["id"]
-
-    vcs = ViewCategorySetRegister(resource_factory)
+    resource_factory = config.get_resource_factory()
+    builder = config.view_registering_builder(resource_factory)
+    vcs = builder.view_category_set
     def pattern_fn(Model):
         return "/{}/{{id}}".format(Model.__name__.lower())
 
     def route_name_fn(Model):
         return "{}.detail".format(Model.__name__.lower())
-    vc = ViewCategoryRegister(pattern_fn, route_name_fn)
-    vcs["detail"] = vc
-
-    v = ViewRegister(OneModelViewFactory(parsing), renderer="json")
-    vc["get"] = v
-
-
-    ## register
-    vcs(config, User)
+    with vcs.view_category(pattern_fn, route_name_fn) as vc:
+        def parsing(request):
+            return request.matchdict["id"]
+        vc.view(OneModelViewFactory(parsing), request_method="GET", renderer="json")
+    builder.build(config, User)
 
 def main(global_config, **settings):
     config = Configurator(settings=settings)
-    from block.komet.mapping import install_json_mapping
-    config.include(install_json_mapping)
+    config.include("block.komet.mapping.install_json_mapping")
+    config.include("block.komet.pyramid.registering")
+    config.include("block.komet.pyramid.resources")
     config.include(setup_database)
+    config.include(setup_resource_factory)
     config.include(setup_views)
     config.commit()
-
-    from pyramid.interfaces import IRouteRequest
-    from pyramid.interfaces import IViewClassifier
-    from pyramid.interfaces import IView
-    from zope.interface import Interface
-
-    mapper = config.get_routes_mapper()
-    registry = config.registry
-    if mapper is not None:
-        routes = mapper.get_routes()
-        assert routes
-        fmt = '%-15s %-30s %-25s'
-        if not routes:
-            return 0
-        logger.info(fmt % ('Name', 'Pattern', 'View'))
-        logger.info(
-            fmt % ('-'*len('Name'), '-'*len('Pattern'), '-'*len('View')))
-        for route in routes:
-            pattern = route.pattern
-            if not pattern.startswith('/'):
-                pattern = '/' + pattern
-            request_iface = registry.queryUtility(IRouteRequest,
-                                                  name=route.name)
-            view_callable = None
-            if (request_iface is None) or (route.factory is not None):
-                logger.info(fmt % (route.name, pattern, '<unknown>'))
-            else:
-                view_callable = registry.adapters.lookup(
-                    (IViewClassifier, request_iface, Interface),
-                    IView, name='', default=None)
-                logger.info(fmt % (route.name, pattern, view_callable))
+    from block.komet.pyramid.tools import proutes
+    proutes(config)
     logger.debug("ok.")
     return config.make_wsgi_app()
 

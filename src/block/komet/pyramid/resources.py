@@ -29,3 +29,13 @@ class KommetResource(object):
     @reify
     def walking(self):
         return self.env.walking
+
+def register_resource_factory(config, resource_factory, name=""):
+    config.registry.registerUtility(resource_factory, IResourceFactory, name=name)
+
+def get_resource_factory(config, name=""):
+    return config.registry.getUtility(IResourceFactory, name=name)
+
+def includeme(config):
+    config.add_directive("register_resource_factory", register_resource_factory)
+    config.add_directive("get_resource_factory", get_resource_factory)
