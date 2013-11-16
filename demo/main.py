@@ -79,3 +79,11 @@ if __name__ == '__main__':
     server = make_server('0.0.0.0', 8080, app)
     logger.info("port: %s", 8080)
     server.serve_forever()
+
+"""
+curl localhost:8080/users
+curl -d name="barr" localhost:8080/users
+curl localhost:8080/users/3
+curl -d name="barr" localhost:8080/users/3
+curl -X DELETE localhost:8080/users/3
+"""

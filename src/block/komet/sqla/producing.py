@@ -15,6 +15,12 @@ class ModelProducing(object):
         session = self.session
         return session.query(self.Model).get(id_)
 
+    def delete(self, id_):
+        session = self.session
+        model = self.get(id_)
+        session.delete(model)
+        return model
+
     def create(self, params): #buggy
         session = self.session
         model = self.Model(**params)

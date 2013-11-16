@@ -7,3 +7,5 @@ class CreationFailure(Exception):
     pass
 class UpdatingFailure(Exception):
     pass
+class DelitingFailure(Exception):
+    pass

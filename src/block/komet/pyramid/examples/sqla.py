@@ -24,6 +24,7 @@ from ..views import (
     OneModelViewFactory,
     OneModelCreationViewFactory,
     OneModelUpdatingViewFactory,
+    OneModelDeletingViewFactory,
     OneModelListingViewFactory
 )
 
@@ -58,3 +59,6 @@ def detail_view_category(vcs):
         def parsing(request):
             return request.matchdict["id"], request.POST
         vc.define_view(OneModelUpdatingViewFactory(parsing), request_method="POST", renderer="json")
+        def parsing(request):
+            return request.matchdict["id"]
+        vc.define_view(OneModelDeletingViewFactory(parsing), request_method="DELETE", renderer="json")
