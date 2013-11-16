@@ -1,13 +1,14 @@
 # -*- coding:utf-8 -*-
 import logging
 logger = logging.getLogger(__name__)
-from zope.interfaces import (
+from zope.interface import (
     implementer,
     provider
 )
 from .interfaces import IValidationGenerator
 from ..interfaces import IValidating
 from ..exceptions import ValidationFailure
+from ..exceptions import BadData
 
 def append_error_handler(request, errors, name, e):
     if name in errors:
@@ -33,13 +34,14 @@ class ValidationQueue(object):
         validation_factory = self.normalize(validation, pick)
         validation_factory.__name__ =  "V_{}".format(validation.__name__)
         self.q.append((name, validation_factory))
+        return self
 
     def normalize(self, validation, pick):
         if pick:
             def validation_with_extra(request, kwargs):
                 def _wrapped(data):
                     extra = pick(request, data, kwargs)
-                    return validation(data, extra)
+                    return validation(data, **extra)
                 return _wrapped
             return validation_with_extra
         else:
@@ -53,10 +55,10 @@ class ValidationQueue(object):
 
 @implementer(IValidating)
 class ValidationExecuter(object):
-    def __init__(self, 
+    def __init__(self,
                  validation_generator,
                  error_handler=append_error_handler,
-                 Error=ValidationFailure):
+                 Error=BadData):
         self.validation_generator = validation_generator
         self.error_handler = error_handler
         self.Error = Error
@@ -75,3 +77,6 @@ class ValidationExecuter(object):
             return data
         else:
             raise ValidationFailure(errors, first_error)
+
+def validation_config(parsing):
+    pass

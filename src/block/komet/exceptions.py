@@ -12,6 +12,10 @@ class DelitingFailure(Exception):
 class NotFoundFailure(Exception):
     pass
 
+
+class BadData(Exception):
+    pass
+
 class ValidationFailure(Exception):
     def __init__(self, errors, original):
         self.errors = errors

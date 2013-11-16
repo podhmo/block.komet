@@ -15,7 +15,7 @@ def nameof(o):
 
 import itertools
 def provided_chain(*xs):
-    return itertools.chain.from_iterable((providedBy(x) for x in xs))
+    return itertools.chain.from_iterable((normalize_provided1(x) for x in xs))
 
 def normalize_registry(request_or_registry):
     if hasattr(request_or_registry, "registry"):

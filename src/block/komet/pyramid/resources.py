@@ -53,11 +53,11 @@ class KommetResource(object):
         except NotFoundFailure:
             return fallback(self, exception("not found. {}".format(nameof(self.Model))))
 
-    def try_commit(self, parsing, params, commit):
+    def try_commit(self, parsing, params, commit, **extra):
         adapters = self.request.registry.adapters
         validating = adapters.lookup(provided_chain(parsing, self.request), IValidating, name=nameof(self.Model))
         if validating:
-            params = self.validating(self.request, params, errors={})
+            params = validating(self.request, params, errors={}, **extra)
         return commit(params)
 
 def register_resource_factory(config, resource_factory, name=""):

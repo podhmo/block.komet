@@ -46,6 +46,26 @@ def setup_views(config):
     config.maybe_dotted("block.komet.pyramid.examples.sqla.list_view_category")(vcs)
     builder.build(config, User)
 
+def setup_validations(config):
+    from block.komet.pyramid.interfaces import ICreating, IUpdating
+    from block.komet.interfaces import IValidating
+    from block.komet.utils import nameof
+    from block.komet.pyramid.validation import ValidationQueue, ValidationExecuter
+    from block.komet.exceptions import BadData
+    from pyramid.interfaces import IRequest
+    adapters = config.registry.adapters
+    def unique_name(data, session, id):
+        qs = session.query(User).filter_by(name=data["name"])
+        if id:
+            qs = qs.filter(User.id != id)
+        if qs.count() > 0:
+            raise BadData(data)
+    vq = ValidationQueue().add("name", unique_name, pick=lambda r, d, e: {"session": r.context.session, "id": e.get("id")})
+    validation = ValidationExecuter(vq)
+
+    adapters.register([ICreating, IRequest], IValidating, nameof(User), validation)
+    adapters.register([IUpdating, IRequest], IValidating, nameof(User), validation)
+
 def simple_commit_tween(handler, registry): #todo:fix
     def tween(request):
         response = handler(request)
@@ -60,6 +80,7 @@ def main(global_config, prefix="demo.main.", **settings):
     config.include("block.komet.pyramid.resources")
     config.include(setup_database)
     config.include(setup_views)
+    config.include(setup_validations)
     ## buggy
     config.add_tween("{prefix}simple_commit_tween".format(prefix=prefix))
     config.commit()

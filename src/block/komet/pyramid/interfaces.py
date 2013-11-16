@@ -29,3 +29,21 @@ class IRegisterRepository(Interface):
     view_category_set = Attribute("")
     view_category = Attribute("")
     view = Attribute("")
+
+
+## validation
+class IValidationGenerator(Interface):
+    def __call__(request, kwargs):
+        pass
+
+class IDataValidation(Interface):
+    def __call__(request, data, errors, **kwargs):
+        pass
+
+## stage
+class ICreating(Interface):
+    pass
+class IDeleting(Interface):
+    pass
+class IUpdating(Interface):
+    pass
