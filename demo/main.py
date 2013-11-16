@@ -6,7 +6,7 @@ logger = logging.getLogger(__name__)
 import sqlalchemy as sa
 import sqlalchemy.orm as orm
 from sqlalchemy.ext.declarative import declarative_base
-
+from datetime import datetime
 Session = orm.sessionmaker()
 Base = declarative_base()
 
@@ -14,7 +14,8 @@ class User(Base):
     __tablename__ = "users"
     id = sa.Column(sa.Integer(), primary_key=True, nullable=False)
     name = sa.Column(sa.String(255), unique=True, nullable=False)
-
+    created_at = sa.Column(sa.DateTime, default=datetime.now)
+    updated_at = sa.Column(sa.DateTime, onupdate=datetime.now, default=datetime.now)
 
 from pyramid.config import Configurator
 
@@ -81,9 +82,9 @@ if __name__ == '__main__':
     server.serve_forever()
 
 """
-curl localhost:8080/users
-curl -d name="barr" localhost:8080/users
-curl localhost:8080/users/3
-curl -d name="barr" localhost:8080/users/3
-curl -X DELETE localhost:8080/users/3
+curl http://localhost:8080/api/users
+curl -d name="barr" http://localhost:8080/api/users
+curl http://localhost:8080/api/users/3
+curl -d name="fixed" http://localhost:8080/api/users/3
+curl -X DELETE http://localhost:8080/api/users/3
 """

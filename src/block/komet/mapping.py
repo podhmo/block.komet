@@ -21,7 +21,7 @@ def maybe_None(fn):
     def wrapper(*args, **kwargs):
         try:
             return fn(*args, **kwargs)
-        except TypeError:
+        except (TypeError, AttributeError):
             if args[0] is None:
                 return "null"
             raise
