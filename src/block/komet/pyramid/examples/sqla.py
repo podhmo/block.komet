@@ -14,14 +14,35 @@ from block.komet.pyramid.resources import (
 def install_komet_resource(config, session_factory, mapping, name=""):
     config.include("block.komet.pyramid.resources")
     walking = MapperWalking(ColumnsWalkingTemplate, mapping)
-    producing = functools.partial(ModelProducing, session_factory)
-    resource_factory = KometResourceFactory(producing, walking)
+    resource_factory = KometResourceFactory(ModelProducing, walking, session_factory)
     config.register_resource_factory(resource_factory, name=name)
     return resource_factory
 
 ## view category
-from ..views import OneModelViewFactory
-from ..views import ListingViewFactory
+
+from ..views import (
+    OneModelViewFactory,
+    OneModelCreationViewFactory,
+    OneModelUpdatingViewFactory,
+    OneModelListingViewFactory
+)
+
+
+def list_view_category(vcs):
+    def pattern_fn(Model):
+        return "/{}s".format(Model.__name__.lower())
+
+    def route_name_fn(Model):
+        return "{}.index".format(Model.__name__.lower())
+
+    with vcs.define_view_category(pattern_fn, route_name_fn) as vc:
+        def parsing(request):
+            return request.GET
+        vc.define_view(OneModelListingViewFactory(parsing), renderer="json")
+
+        def parsing(request):
+            return request.POST #todo: validation
+        vc.define_view(OneModelCreationViewFactory(parsing), request_method="POST", renderer="json")
 
 def detail_view_category(vcs):
     def pattern_fn(Model):
@@ -34,15 +55,6 @@ def detail_view_category(vcs):
         def parsing(request):
             return request.matchdict["id"]
         vc.define_view(OneModelViewFactory(parsing), request_method="GET", renderer="json")
-
-def list_view_category(vcs):
-    def pattern_fn(Model):
-        return "/{}s".format(Model.__name__.lower())
-
-    def route_name_fn(Model):
-        return "{}.index".format(Model.__name__.lower())
-
-    with vcs.define_view_category(pattern_fn, route_name_fn) as vc:
         def parsing(request):
-            return request.GET
-        vc.define_view(ListingViewFactory(parsing), renderer="json")
+            return request.matchdict["id"], request.POST
+        vc.define_view(OneModelUpdatingViewFactory(parsing), request_method="POST", renderer="json")

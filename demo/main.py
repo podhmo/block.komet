@@ -31,8 +31,12 @@ def setup_database(config):
     session.add(User(name="bar"))
     session.commit()
 
-def session_factory():
-    return Session() #buggy
+def session_factory(request):
+    try:
+        return request.session
+    except AttributeError:
+        v = request.session = Session()
+        return v
 
 def setup_views(config):
     from block.komet.mapping import (
@@ -47,6 +51,13 @@ def setup_views(config):
     config.maybe_dotted("block.komet.pyramid.examples.sqla.list_view_category")(vcs)
     builder.build(config, User)
 
+def simple_commit_tween(handler, registry): #todo:fix
+    def tween(request):
+        response = handler(request)
+        request.session.commit()
+        return response
+    return tween
+
 def main(global_config, **settings):
     config = Configurator(settings=settings)
     config.include("block.komet.mapping.install_json_mapping")
@@ -54,6 +65,8 @@ def main(global_config, **settings):
     config.include("block.komet.pyramid.resources")
     config.include(setup_database)
     config.include(setup_views)
+    ## buggy
+    config.add_tween(".simple_commit_tween")
     config.commit()
     from block.komet.pyramid.tools import proutes
     proutes(config)

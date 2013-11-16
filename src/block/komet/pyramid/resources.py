@@ -9,9 +9,10 @@ from .interfaces import IResourceFactory
 
 @implementer(IResourceFactory)
 class KometResourceFactory(object):
-    def __init__(self, producing, walking):
+    def __init__(self, producing, walking, session_factory):
         self.producing = producing
         self.walking = walking
+        self.session_factory = session_factory
 
     def __call__(self, Model):
         return partial(KommetResource, self, Model)
@@ -23,8 +24,12 @@ class KommetResource(object):
         self.request = request
 
     @reify
+    def session(self):
+        return self.env.session_factory(self.request)
+
+    @reify
     def producing(self):
-        return self.env.producing(self.Model)
+        return self.env.producing(self.session, self.Model)
 
     @reify
     def walking(self):
