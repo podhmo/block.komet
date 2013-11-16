@@ -44,6 +44,7 @@ def setup_views(config):
     builder = config.view_registering_builder(komet_resource_factory)
     vcs = builder.view_category_set
     config.maybe_dotted("block.komet.pyramid.examples.sqla.detail_view_category")(vcs)
+    config.maybe_dotted("block.komet.pyramid.examples.sqla.list_view_category")(vcs)
     builder.build(config, User)
 
 def main(global_config, **settings):

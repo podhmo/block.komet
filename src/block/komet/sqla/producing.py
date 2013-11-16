@@ -7,9 +7,14 @@ from ..interfaces import IProducing
 
 @implementer(IProducing)
 class ModelProducing(object):
-    def __init__(self, session_factory):
+    def __init__(self, session_factory, Model):
         self.session_factory = session_factory
+        self.Model = Model
 
-    def __call__(self, Model, id_):
+    def get(self, id_):
         session = self.session_factory()
-        return session.query(Model).get(id_)
+        return session.query(self.Model).get(id_)
+
+    def list(self, query_params):
+        session = self.session_factory()
+        return session.query(self.Model)

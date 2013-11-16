@@ -24,7 +24,7 @@ class KommetResource(object):
 
     @reify
     def producing(self):
-        return partial(self.env.producing, self.Model)
+        return self.env.producing(self.Model)
 
     @reify
     def walking(self):
