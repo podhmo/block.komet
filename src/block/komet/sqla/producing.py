@@ -4,6 +4,7 @@ logger = logging.getLogger(__name__)
 
 from zope.interface import implementer
 from ..interfaces import IProducing
+from ..exceptions import NotFoundFailure
 
 @implementer(IProducing)
 class ModelProducing(object):
@@ -13,7 +14,10 @@ class ModelProducing(object):
 
     def get(self, id_):
         session = self.session
-        return session.query(self.Model).get(id_)
+        v = session.query(self.Model).get(id_)
+        if v is None:
+            raise NotFoundFailure()
+        return v
 
     def delete(self, id_):
         session = self.session

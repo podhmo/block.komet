@@ -65,3 +65,14 @@ def install_json_mapping(config):
 
     adapters.register([i.IInteger, i.IInteger], i.IMapping, name, partial(json_list, convert=json_int))
     adapters.register([i.IString, i.IString], i.IMapping, name, partial(json_list, convert=json_string))
+
+def install_python_mapping(config):
+    adapters = config.registry.adapters
+    name = "python"
+    def identity(x):
+        return x
+    adapters.register([i.IType], i.IMapping, name, identity)
+    adapters.register([i.IDateTime], i.IMapping, name, isoformat)
+    adapters.register([i.IDate], i.IMapping, name, isoformat)
+    adapters.register([i.ITime], i.IMapping, name, isoformat)
+    adapters.register([i.IType, i.IType], i.IMapping, name, identity)

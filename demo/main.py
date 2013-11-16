@@ -20,7 +20,8 @@ class User(Base):
 from pyramid.config import Configurator
 
 def setup_database(config):
-    engine = sa.create_engine('sqlite://', echo=True)
+    # engine = sa.create_engine('sqlite://', echo=True)
+    engine = sa.create_engine('sqlite://')
     Session.configure(bind=engine, autoflush=False)
     Base.metadata.bind = engine
     Base.metadata.create_all()
@@ -43,9 +44,9 @@ def setup_views(config):
     from block.komet.mapping import (
         get_mapping_function_factory
     )
-    json_mapping = get_mapping_function_factory(config, name="json")
+    mapping = get_mapping_function_factory(config, name="python")
     installer = config.maybe_dotted("block.komet.pyramid.examples.sqla.install_komet_resource")
-    komet_resource_factory = installer(config, session_factory, json_mapping, name="komet")
+    komet_resource_factory = installer(config, session_factory, mapping, name="komet")
     builder = config.view_registering_builder(komet_resource_factory)
     vcs = builder.view_category_set
     config.maybe_dotted("block.komet.pyramid.examples.sqla.detail_view_category")(vcs)
@@ -59,15 +60,15 @@ def simple_commit_tween(handler, registry): #todo:fix
         return response
     return tween
 
-def main(global_config, **settings):
+def main(global_config, prefix="demo.main.", **settings):
     config = Configurator(settings=settings)
-    config.include("block.komet.mapping.install_json_mapping")
+    config.include("block.komet.mapping.install_python_mapping")
     config.include("block.komet.pyramid.registering")
     config.include("block.komet.pyramid.resources")
     config.include(setup_database)
     config.include(setup_views)
     ## buggy
-    config.add_tween(".simple_commit_tween")
+    config.add_tween("{prefix}simple_commit_tween".format(prefix=prefix))
     config.commit()
     from block.komet.pyramid.tools import proutes
     proutes(config)
@@ -76,7 +77,7 @@ def main(global_config, **settings):
 
 if __name__ == '__main__':
     from wsgiref.simple_server import make_server
-    app = main({})
+    app = main({}, prefix=".")
     server = make_server('0.0.0.0', 8080, app)
     logger.info("port: %s", 8080)
     server.serve_forever()

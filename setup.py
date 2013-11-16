@@ -14,6 +14,7 @@ requires = [
 tests_require = [
     "sqlalchemy",
     "pyramid",
+    "webtest"
 ]
 
 long_description = "\n".join(open(f).read() for f in  ["README.rst", "CHANGES.txt"])
@@ -46,3 +47,5 @@ setup(name='block.komet',
       # -*- Entry points: -*-
       """,
       )
+
+#python setup.py develop easy_install block.komet[testing]

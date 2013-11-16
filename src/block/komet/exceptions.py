@@ -9,3 +9,5 @@ class UpdatingFailure(Exception):
     pass
 class DelitingFailure(Exception):
     pass
+class NotFoundFailure(Exception):
+    pass

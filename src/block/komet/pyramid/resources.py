@@ -3,9 +3,13 @@ import logging
 logger = logging.getLogger(__name__)
 from pyramid.decorator import reify
 from functools import partial
-
+import contextlib
 from zope.interface import implementer
 from .interfaces import IResourceFactory
+
+from block.komet.exceptions import NotFoundFailure
+from pyramid.httpexceptions import HTTPNotFound
+
 
 @implementer(IResourceFactory)
 class KometResourceFactory(object):
@@ -34,6 +38,16 @@ class KommetResource(object):
     @reify
     def walking(self):
         return self.env.walking
+
+    def raise_exception(self, exc):
+        raise exc
+
+    @contextlib.contextmanager
+    def try_maybe_notfound(self, exception, fallback=raise_exception):
+        try:
+            yield
+        except NotFoundFailure:
+            return fallback(self, exception("not found. {}".format(self.Model.__name__)))
 
 def register_resource_factory(config, resource_factory, name=""):
     config.registry.registerUtility(resource_factory, IResourceFactory, name=name)
