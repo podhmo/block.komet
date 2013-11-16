@@ -34,39 +34,16 @@ def setup_database(config):
 def session_factory():
     return Session() #buggy
 
-def setup_resource_factory(config):
-    from block.komet.sqla import (
-        MapperWalking, 
-        ColumnsWalkingTemplate, 
-        ModelProducing
-    )
+def setup_views(config):
     from block.komet.mapping import (
         get_mapping_function_factory
     )
-    from block.komet.pyramid.resources import (
-        KometResourceFactory
-    )
     json_mapping = get_mapping_function_factory(config, name="json")
-    walking = MapperWalking(ColumnsWalkingTemplate, json_mapping)
-    producing = ModelProducing(session_factory)
-    config.register_resource_factory(KometResourceFactory(producing, walking))
-
-def setup_views(config):
-    from block.komet.pyramid.views import (
-        OneModelViewFactory
-    )
-    resource_factory = config.get_resource_factory()
-    builder = config.view_registering_builder(resource_factory)
+    installer = config.maybe_dotted("block.komet.pyramid.examples.sqla.install_komet_resource")
+    komet_resource_factory = installer(config, session_factory, json_mapping, name="komet")
+    builder = config.view_registering_builder(komet_resource_factory)
     vcs = builder.view_category_set
-    def pattern_fn(Model):
-        return "/{}/{{id}}".format(Model.__name__.lower())
-
-    def route_name_fn(Model):
-        return "{}.detail".format(Model.__name__.lower())
-    with vcs.view_category(pattern_fn, route_name_fn) as vc:
-        def parsing(request):
-            return request.matchdict["id"]
-        vc.view(OneModelViewFactory(parsing), request_method="GET", renderer="json")
+    config.maybe_dotted("block.komet.pyramid.examples.sqla.detail_view_category")(vcs)
     builder.build(config, User)
 
 def main(global_config, **settings):
@@ -75,7 +52,6 @@ def main(global_config, **settings):
     config.include("block.komet.pyramid.registering")
     config.include("block.komet.pyramid.resources")
     config.include(setup_database)
-    config.include(setup_resource_factory)
     config.include(setup_views)
     config.commit()
     from block.komet.pyramid.tools import proutes

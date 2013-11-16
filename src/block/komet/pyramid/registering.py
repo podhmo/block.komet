@@ -83,7 +83,7 @@ class _RegisterProxy(object):
 
 class ViewCategorySetRegisterProxy(_RegisterProxy):
     @contextlib.contextmanager
-    def view_category(self, patten_create, route_name_create, **kwargs):
+    def define_view_category(self, patten_create, route_name_create, **kwargs):
         parent = self.core
         factory = self.repository.view_category
         child = factory(patten_create, route_name_create, **kwargs)
@@ -91,7 +91,7 @@ class ViewCategorySetRegisterProxy(_RegisterProxy):
         yield ViewCategoryRegisterProxy(child, self.repository)
 
 class ViewCategoryRegisterProxy(_RegisterProxy):
-    def view(self, *args, **kwargs):
+    def define_view(self, *args, **kwargs):
         parent = self.core
         factory = self.repository.view
         child = factory(*args, **kwargs)
