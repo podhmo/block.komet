@@ -26,13 +26,6 @@ def setup_database(config):
     Base.metadata.bind = engine
     Base.metadata.create_all()
 
-
-    session = Session()
-    session.add(User(name="foo"))
-    session.add(User(name="boo"))
-    session.add(User(name="bar"))
-    session.commit()
-
 def session_factory(request):
     try:
         return request.session
@@ -78,9 +71,19 @@ def main(global_config, prefix="demo.main.", **settings):
 if __name__ == '__main__':
     from wsgiref.simple_server import make_server
     app = main({}, prefix=".")
+
+    session = Session()
+    session.add(User(name="foo"))
+    session.add(User(name="boo"))
+    session.add(User(name="bar"))
+    session.commit()
+
     server = make_server('0.0.0.0', 8080, app)
     logger.info("port: %s", 8080)
     server.serve_forever()
+
+def tear_down():
+    Base.metadata.drop_all()
 
 """
 curl http://localhost:8080/api/users
