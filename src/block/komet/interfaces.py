@@ -17,6 +17,10 @@ class IParsing(Interface):
     def __call__(subject):
         pass
 
+class IValidating(Interface):
+    def __call__(subject):
+        pass
+
 class IRegistering(Interface):
     def register(name, **kwargs):
         pass

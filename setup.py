@@ -14,7 +14,8 @@ requires = [
 tests_require = [
     "sqlalchemy",
     "pyramid",
-    "webtest"
+    "webtest",
+    "colander"
 ]
 
 long_description = "\n".join(open(f).read() for f in  ["README.rst", "CHANGES.txt"])

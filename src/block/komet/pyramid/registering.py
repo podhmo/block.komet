@@ -12,13 +12,7 @@ from .interfaces import (
 from collections import namedtuple
 import contextlib
 from pyramid.decorator import reify
-
-def nameof(o):
-    try:
-        return o.__name__
-    except AttributeError as e:
-        logger.debug(repr(e))
-        return o.__class__.__name__
+from ..utils import nameof
 
 @implementer(IViewCategorySetRegister)
 class ViewCategorySetRegister(object):

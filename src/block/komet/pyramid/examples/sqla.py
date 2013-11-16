@@ -10,6 +10,7 @@ from block.komet.sqla import (
 from block.komet.pyramid.resources import (
     KometResourceFactory
 )
+from block.komet.utils import nameof
 
 def install_komet_resource(config, session_factory, mapping, name=""):
     config.include("block.komet.pyramid.resources")
@@ -30,10 +31,10 @@ from ..views import (
 
 def list_view_category(vcs):
     def pattern_fn(Model):
-        return "/api/{}s".format(Model.__name__.lower())
+        return "/api/{}s".format(nameof(Model).lower())
 
     def route_name_fn(Model):
-        return "{}.index".format(Model.__name__.lower())
+        return "{}.index".format(nameof(Model).lower())
 
     with vcs.define_view_category(pattern_fn, route_name_fn) as vc:
         def parsing(request):
@@ -46,10 +47,10 @@ def list_view_category(vcs):
 
 def detail_view_category(vcs):
     def pattern_fn(Model):
-        return "/api/{}s/{{id}}".format(Model.__name__.lower())
+        return "/api/{}s/{{id}}".format(nameof(Model).lower())
 
     def route_name_fn(Model):
-        return "{}.detail".format(Model.__name__.lower())
+        return "{}.detail".format(nameof(Model).lower())
 
     with vcs.define_view_category(pattern_fn, route_name_fn) as vc:
         def parsing(request):

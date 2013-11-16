@@ -4,12 +4,16 @@ logger = logging.getLogger(__name__)
 from pyramid.decorator import reify
 from functools import partial
 import contextlib
-from zope.interface import implementer
+from zope.interface import (
+    implementer,
+    providedBy
+)
+from ..interfaces import IValidating
 from .interfaces import IResourceFactory
 
 from block.komet.exceptions import NotFoundFailure
-from pyramid.httpexceptions import HTTPNotFound
-
+from ..utils import nameof
+from ..utils import provided_chain
 
 @implementer(IResourceFactory)
 class KometResourceFactory(object):
@@ -47,7 +51,14 @@ class KommetResource(object):
         try:
             yield
         except NotFoundFailure:
-            return fallback(self, exception("not found. {}".format(self.Model.__name__)))
+            return fallback(self, exception("not found. {}".format(nameof(self.Model))))
+
+    def try_commit(self, parsing, params, commit):
+        adapters = self.request.registry.adapters
+        validating = adapters.lookup(provided_chain(parsing, self.request), IValidating, name=nameof(self.Model))
+        if validating:
+            params = self.validating(self.request, params, errors={})
+        return commit(params)
 
 def register_resource_factory(config, resource_factory, name=""):
     config.registry.registerUtility(resource_factory, IResourceFactory, name=name)

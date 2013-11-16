@@ -1,6 +1,21 @@
 # -*- coding:utf-8 -*-
+import logging
+logger = logging.getLogger(__name__)
+
 from zope.interface.interface import InterfaceClass
 from zope.interface import providedBy
+
+
+def nameof(o):
+    try:
+        return o.__name__
+    except AttributeError as e:
+        logger.debug(repr(e))
+        return o.__class__.__name__
+
+import itertools
+def provided_chain(*xs):
+    return itertools.chain.from_iterable((providedBy(x) for x in xs))
 
 def normalize_registry(request_or_registry):
     if hasattr(request_or_registry, "registry"):

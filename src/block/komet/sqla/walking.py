@@ -56,7 +56,7 @@ class ColumnsWalkingTemplate(object):
                 types_list = tuple((c.type.__class__ if type(c.type) != VisitableType else c.type)
                                    for c in prop.columns)
                 iface = self.type_of(types_list)
-                logger.debug("*types_list={types_list}, iface={iface}".format(types_list=types_list, iface=iface))
+                # logger.debug("*types_list={types_list}, iface={iface}".format(types_list=types_list, iface=iface))
                 if iface is IUnknown:
                     logger.warn("*IUnknown found. ignored")
                     continue
