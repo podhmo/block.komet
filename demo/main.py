@@ -59,7 +59,7 @@ def setup_validations(config):
         if id:
             qs = qs.filter(User.id != id)
         if qs.count() > 0:
-            raise BadData(data)
+            raise BadData("{} is already found.".format(data["name"]))
     vq = ValidationQueue().add("name", unique_name, pick=lambda r, d, e: {"session": r.context.session, "id": e.get("id")})
     validation = ValidationExecuter(vq)
 

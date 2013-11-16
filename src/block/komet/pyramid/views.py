@@ -38,7 +38,9 @@ class OneModelCreationViewFactory(object):
                 params = self.parsing(request)
                 target = context.try_commit(self.parsing, params, context.producing.create)
                 return {"status": True, "message": "created", "data": context.walking(target)}
-            except (CreationFailure, ValidationFailure) as e:
+            except ValidationFailure as e:
+                return {"status": False, "message": e.message, "data": dict(params)}
+            except CreationFailure as e:
                 return {"status": False, "message": repr(e), "data": dict(params)}
 
 class OneModelUpdatingViewFactory(object):
@@ -53,7 +55,9 @@ class OneModelUpdatingViewFactory(object):
                 commit = lambda params: context.producing.update(id_, params)
                 target = context.try_commit(self.parsing, params, commit, id=id_)
                 return {"status": True, "message": "updated", "data": context.walking(target)}
-            except (UpdatingFailure, ValidationFailure) as e:
+            except ValidationFailure as e:
+                return {"status": False, "message": e.message, "data": dict(params)}
+            except UpdatingFailure as e:
                 return {"status": False, "message": repr(e), "data": dict(params)}
 
 

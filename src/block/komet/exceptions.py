@@ -17,17 +17,9 @@ class BadData(Exception):
     pass
 
 class ValidationFailure(Exception):
-    def __init__(self, errors, original):
-        self.errors = errors
+    def __init__(self, message, original):
+        self.message = message
         self.original = original
 
-    @property
-    def message(self):
-        r = []
-        for k, vs in self.errors:
-            sr = "\t".join(vs)
-            if sr:
-                r.append(k)
-                r.append("\t")
-                r.extend(sr)
-        return "\n".join(r)
+    def __str__(self):
+        return self.message
