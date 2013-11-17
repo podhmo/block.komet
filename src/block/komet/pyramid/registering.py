@@ -25,6 +25,7 @@ class ViewCategorySetRegister(object):
         self.registers.append(register)
 
     def __call__(self, config, Model, options):
+        # logger.info(". options %s", options)
         resource = self.resource_factory(Model)
         for register in self.registers:
             sub_options = options.get(register.name, {})
@@ -43,6 +44,7 @@ class ViewCategoryRegister(object):
 
 
     def __call__(self, config, Model, resource, options):
+        # logger.info(".. options %s", options)
         route_name = self.route_name_create(Model)
         pattern = self.pattern_create(Model)
         config.add_route(route_name, pattern=pattern, factory=resource)
@@ -57,11 +59,18 @@ class ViewRegister(object):
         self.name = name
         self.view = view
         self.kwargs = kwargs
-        self.name = "{}ViewRegister".format(nameof(view))
+        self.callback = None
+
+    def register(self, callback):
+        self.callback = callback
 
     def __call__(self, config, Model, route_name, options):
-        logger.info(".. options %s", options)
-        config.add_view(self.view, route_name=route_name, **self.kwargs)
+        # logger.info("... options %s", options)
+        if self.callback:
+            view = self.callback(self.view, Model, options)
+        else:
+            view = self.view
+        config.add_view(view, route_name=route_name, **self.kwargs)
         logger.debug("registering.. view=%s, route=%s", self.view, route_name)
 
 _RegisterRepository = namedtuple("RegisterRepository", "view_category_set, view_category, view")
@@ -88,12 +97,17 @@ class ViewCategorySetRegisterProxy(_RegisterProxy):
         yield ViewCategoryRegisterProxy(child, self.repository)
 
 class ViewCategoryRegisterProxy(_RegisterProxy):
+    @contextlib.contextmanager
     def define_view(self, *args, **kwargs):
         parent = self.core
         factory = self.repository.view
         child = factory(*args, **kwargs)
         parent.register(child)
-        return child
+        yield ViewRegisterProxy(child, self.repository)
+
+class ViewRegisterProxy(_RegisterProxy):
+    def register(self, callback=None):
+        self.core.register(callback)
 
 class ViewRegisteringBuilder(object):
     RegisterProxy = ViewCategorySetRegisterProxy

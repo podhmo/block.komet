@@ -39,6 +39,11 @@ class ModelProducing(object):
         session.add(model)
         return model
 
-    def list(self, query_params):
+    def list(self, query_params, query_options):
         session = self.session
-        return session.query(self.Model).filter_by(**query_params)
+        qs = session.query(self.Model).filter_by(**query_params)
+        if "order_by" in query_options:
+            qs = qs.order_by(query_options["order_by"])
+        if "limit" in query_options:
+            qs = qs.limit(query_options["limit"])
+        return qs

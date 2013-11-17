@@ -76,10 +76,11 @@ class OneModelDeletingViewFactory(object):
                 return {"status": False, "message": repr(e), "data": dict(params)}
 
 class OneModelListingViewFactory(object):
-    def __init__(self, parsing):
+    def __init__(self, parsing, query_options):
         self.parsing = parsing
+        self.query_options = query_options
 
     def __call__(self, context, request):
-        targets = context.producing.list(self.parsing(request))
+        targets = context.producing.list(self.parsing(request), self.query_options)
         walking = context.walking
         return {"status": True, "data": [walking(t) for t in targets]}

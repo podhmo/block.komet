@@ -37,14 +37,21 @@ def setup_views(config):
     from block.komet.mapping import (
         get_mapping_function_factory
     )
+    from block.komet.pyramid.examples.sqla import (
+        detail_view_category,
+        list_view_category,
+        install_komet_resource
+    )
     mapping = get_mapping_function_factory(config, name="python")
-    installer = config.maybe_dotted("block.komet.pyramid.examples.sqla.install_komet_resource")
-    komet_resource_factory = installer(config, session_factory, mapping, name="komet")
+    komet_resource_factory = install_komet_resource(config, session_factory, mapping, name="komet")
+
     builder = config.view_registering_builder("api", komet_resource_factory)
     vcs = builder.view_category_set
-    config.maybe_dotted("block.komet.pyramid.examples.sqla.detail_view_category")(vcs)
-    config.maybe_dotted("block.komet.pyramid.examples.sqla.list_view_category")(vcs)
-    builder.build(config, User)
+    detail_view_category(vcs, name="detail")
+    list_view_category(vcs, name="list")
+
+    ## todo:available options
+    builder.build(config, User, {"list": {"list": {"query": {"order_by": "id desc"}}}})
 
 
 def setup_validation_executor(config):
