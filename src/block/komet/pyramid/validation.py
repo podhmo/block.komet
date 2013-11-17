@@ -115,12 +115,12 @@ class ValidationExecuter(object):
                  handle_result=handle_result_default,
                  handle_request=lambda request, kwargs: kwargs,
                  error_handler=append_error_handler,
-                 Error=BadData):
+                 CatchError=BadData):
         self.validation_generator = validation_generator
         self.handle_result = handle_result
         self.handle_request = handle_request
         self.error_handler = error_handler
-        self.Error = Error
+        self.CatchError = CatchError
 
     def __call__(self, request, data, errors, **kwargs):
         status = True
@@ -129,7 +129,7 @@ class ValidationExecuter(object):
         for name, v in self.validation_generator(kwargs):
             try:
                 v(data)
-            except self.Error as e:
+            except self.CatchError as e:
                 status = False
                 first_error = e
                 self.error_handler(request, errors, name, e)

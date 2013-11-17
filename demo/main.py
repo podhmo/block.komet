@@ -47,12 +47,22 @@ def setup_views(config):
     builder.build(config, User)
 
 
+def setup_validation_executor(config):
+    from block.komet.pyramid.validation import ValidationExecuter
+    def handle_request(request, kwargs):
+        kwargs["session"] = request.context.session
+        return kwargs
+    def create_executor(vq):
+        return ValidationExecuter(vq,
+                                  handle_request=handle_request,
+                                  CatchError=Exception)
+    config.add_validation_executor(create_executor)
+
 def setup_validations(config):
     from block.komet.pyramid.interfaces import ICreating, IUpdating
-    from block.komet.pyramid.validation import ValidationQueue, ValidationExecuter, with_pick
-    from block.komet.exceptions import BadData
+    from block.komet.pyramid.validation import ValidationQueue, with_pick
 
-    class UniqueNameConflict(BadData):
+    class UniqueNameConflict(Exception):
         pass
     def unique_name_conflict(e):
         return "name: {} is conflict.".format(e.args[0])
@@ -66,12 +76,8 @@ def setup_validations(config):
             raise UniqueNameConflict(data["name"])
 
     vq = ValidationQueue().add("name", unique_name)
-    def handle_request(request, kwargs):
-        kwargs["session"] = request.context.session
-        return kwargs
 
     config.add_display_message(UniqueNameConflict, unique_name_conflict)
-    config.add_validation_executor(lambda vq: ValidationExecuter(vq, handle_request=handle_request))
     config.add_validation([ICreating], User, vq)
     config.add_validation([IUpdating], User, vq)
 
@@ -91,6 +97,7 @@ def main(global_config, prefix="demo.main.", **settings):
     config.include(setup_database)
     config.include(setup_views)
     config.include(setup_validations)
+    config.include(setup_validation_executor)
     ## buggy
     config.add_tween("{prefix}simple_commit_tween".format(prefix=prefix))
     config.scan(prefix.rstrip(".") if prefix != "." else ".")
