@@ -30,12 +30,37 @@ def _sample_validation_generator(request, kwargs):
     else:
         yield "name", unique_name
 
+def with_pick(positionals=[], optionals=[]):
+    def _wrapped(validation_fn):
+        if hasattr(validation_fn, "pick"):
+            logger.warn("{} has pick, already. overwrite it".format(validation_fn))
+        def pick(cb, data, extra):
+            args = [extra[k] for k in positionals]
+            kwargs = {}
+            for k in optionals:
+                if isinstance(k, (tuple, list)):
+                    put_k = k[1]
+                    k = k[0]
+                else:
+                    put_k = k
+                v = extra.get(k)
+                if v:
+                    kwargs[put_k] = v
+            return cb(data, *args, **kwargs)
+        validation_fn.pick = pick
+        return validation_fn
+    return _wrapped
+
 @implementer(IValidationGenerator)
 class ValidationQueue(object):
     def __init__(self):
         self.q = []
 
+    def get_pick_from_validtion(self, validation, pick):
+        return pick or getattr(validation, "pick", None)
+
     def add(self, name, validation, pick=None):
+        pick = self.get_pick_from_validtion(validation, pick)
         validation_factory = self.normalize(validation, pick)
         validation_factory.__name__ =  "V_{}".format(validation.__name__)
         self.q.append((name, validation_factory))
@@ -43,20 +68,19 @@ class ValidationQueue(object):
 
     def normalize(self, validation, pick):
         if pick:
-            def validation_with_extra(request, kwargs):
+            def validation_with_extra(kwargs):
                 def _wrapped(data):
-                    extra = pick(request, data, kwargs)
-                    return validation(data, **extra)
+                    return pick(validation, data, kwargs)
                 return _wrapped
             return validation_with_extra
         else:
-            def validation_simple(request, kwargs):
+            def validation_simple(kwargs):
                 return lambda data : validation(data)
             return validation_simple
 
-    def __call__(self, request, kwargs):
+    def __call__(self, kwargs):
         for name, v_fn in self.q:
-            yield name, v_fn(request, kwargs)
+            yield name, v_fn(kwargs)
 
 def append_error_handler(request, errors, name, e):
     message = get_display_message(request, e) #todo error handling
@@ -86,17 +110,20 @@ class ValidationExecuter(object):
     def __init__(self,
                  validation_generator,
                  handle_result=handle_result_default,
+                 handle_request=lambda request, kwargs: kwargs,
                  error_handler=append_error_handler,
                  Error=BadData):
         self.validation_generator = validation_generator
         self.handle_result = handle_result
+        self.handle_request = handle_request
         self.error_handler = error_handler
         self.Error = Error
 
     def __call__(self, request, data, errors, **kwargs):
         status = True
         first_error = None
-        for name, v in self.validation_generator(request, kwargs):
+        kwargs = self.handle_request(request, kwargs)
+        for name, v in self.validation_generator(kwargs):
             try:
                 v(data)
             except self.Error as e:
@@ -107,10 +134,15 @@ class ValidationExecuter(object):
 
 
 def get_display_message(request, exception):
-    adapters = request.registry.adapters
-    fn = adapters.lookup1(providedBy(exception), IDisplayMessage, name=nameof(exception.__class__))
-    fn = fn or adapters.lookup1(providedBy(exception), IDisplayMessage, name="")
-    return fn(exception)
+    try:
+        adapters = request.registry.adapters
+        fn = adapters.lookup1(providedBy(exception), IDisplayMessage, name=nameof(exception.__class__))
+        fn = fn or adapters.lookup1(providedBy(exception), IDisplayMessage, name="")
+        return fn(exception)
+    except Exception as e:
+        logger.error(e)
+        return default_message(exception)
+
 
 def default_message(exception):
     ## display stack trace?

@@ -58,8 +58,6 @@ class KommetResource(object):
         validating = adapters.lookup([next(provided_chain(parsing, self.request))],
                                      IValidating, name=nameof(self.Model))
         if validating:
-            if not "session" in extra:
-                extra["session"] = self.session #hmm.
             params = validating(self.request, params, errors={}, **extra)
         return commit(params)
 

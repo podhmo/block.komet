@@ -51,7 +51,7 @@ def setup_validations(config):
     from block.komet.pyramid.interfaces import ICreating, IUpdating
     from block.komet.interfaces import IValidating
     from block.komet.utils import nameof
-    from block.komet.pyramid.validation import ValidationQueue, ValidationExecuter
+    from block.komet.pyramid.validation import ValidationQueue, ValidationExecuter, with_pick
     from block.komet.exceptions import BadData
 
     class UniqueNameConflict(BadData):
@@ -61,14 +61,18 @@ def setup_validations(config):
     config.add_display_message(UniqueNameConflict, unique_name_conflict)
 
     adapters = config.registry.adapters
-    def unique_name(data, session, id):
+    @with_pick(positionals=["session"], optionals=["id"])
+    def unique_name(data, session, id=None):
         qs = session.query(User).filter_by(name=data["name"])
         if id:
             qs = qs.filter(User.id != id)
         if qs.count() > 0:
             raise UniqueNameConflict(data["name"])
-    vq = ValidationQueue().add("name", unique_name, pick=lambda r, d, e: {"session": e["session"], "id": e.get("id")})
-    validation = ValidationExecuter(vq)
+    vq = ValidationQueue().add("name", unique_name)
+    def handle_request(request, kwargs):
+        kwargs["session"] = request.context.session
+        return kwargs
+    validation = ValidationExecuter(vq, handle_request=handle_request)
 
     adapters.register([ICreating], IValidating, nameof(User), validation)
     adapters.register([IUpdating], IValidating, nameof(User), validation)
