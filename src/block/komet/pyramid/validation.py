@@ -160,7 +160,7 @@ def add_display_message(config, exception, message):
         adapters = config.registry.adapters
         adapters.register([IFailure], IDisplayMessage, nameof(exception), message)
 
-    discriminator = exception
+    discriminator = nameof(exception)
     desc = "human redable message for {}".format(nameof(exception))
     introspectables = [
         config.introspectable('display_messages', discriminator, desc, 'display_message')

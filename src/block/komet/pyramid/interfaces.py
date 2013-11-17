@@ -14,15 +14,15 @@ class IRequestParsing(IParsing):
         pass
 
 class IViewCategorySetRegister(IRegistering):
-    def __call__(config, Target):
+    def __call__(config, Target, options):
         pass
 
 class IViewCategoryRegister(IRegistering):
-    def __call__(config, Target, resource):
+    def __call__(config, Target, resource, options):
         pass
 
 class IViewRegister(IRegistering):
-    def __call__(config, Target, route_name):
+    def __call__(config, Target, route_name, options):
         pass
 
 class IRegisterRepository(Interface):
@@ -30,6 +30,9 @@ class IRegisterRepository(Interface):
     view_category = Attribute("")
     view = Attribute("")
 
+class IViewCategorySetBuilder(Interface):
+    def build(config, Target, options=None):
+        pass
 
 ## validation
 class IValidationGenerator(Interface):

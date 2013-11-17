@@ -6,6 +6,7 @@ from pyramid.interfaces import IRouteRequest
 from pyramid.interfaces import IViewClassifier
 from pyramid.interfaces import IView
 from zope.interface import Interface
+from ..utils import nameof
 
 def proutes(config, use_fn=logger.info):
     mapper = config.get_routes_mapper()
@@ -34,3 +35,17 @@ def proutes(config, use_fn=logger.info):
                     IView, name='', default=None)
                 use_fn(fmt % (route.name, pattern, view_callable))
 
+def pkomets(config, use_fn=logger.info): #todo.rename
+    fmt = '%-20s %-45s'
+    komets = config.registry.introspector.get_category("komets", sort_key=lambda x: x["Target"].__name__)
+    if not komets:
+        return 0
+
+    intrs = (k["introspectable"] for k in komets)
+    import itertools
+    for (g, vs) in itertools.groupby(intrs, lambda x: x["Target"]):
+        use_fn("%-10s------------------------------", nameof(g))
+        use_fn(fmt % ('Name', 'Options'))
+        use_fn(fmt % ('-'*len('Name'), '-'*len('Options')))
+        for intr in vs:
+            use_fn(fmt, intr.discriminator, intr["options"])

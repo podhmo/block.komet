@@ -7,7 +7,8 @@ from .interfaces import (
     IViewCategorySetRegister,
     IViewCategoryRegister,
     IViewRegister,
-    IRegisterRepository
+    IRegisterRepository, 
+    IViewCategorySetBuilder,
 )
 from collections import namedtuple
 import contextlib
@@ -21,6 +22,10 @@ class ViewCategorySetRegister(object):
         self.registers = []
         self.name = name
 
+    @property
+    def fullname(self):
+        return self.name
+
     def register(self, register): #todo:options?
         self.registers.append(register)
 
@@ -33,11 +38,16 @@ class ViewCategorySetRegister(object):
 
 @implementer(IViewCategoryRegister)
 class ViewCategoryRegister(object):
-    def __init__(self, name, pattern_create, route_name_create):
+    def __init__(self, name, pattern_create, route_name_create, parent=None):
+        self.name = name
         self.pattern_create = pattern_create
         self.route_name_create = route_name_create
         self.registers = []
-        self.name = name
+        self.parent = parent
+
+    @reify
+    def fullname(self):
+        return "{self.parent.fullname}.{self.name}".format(self=self)
 
     def register(self, register): #todo:options?
         self.registers.append(register)
@@ -55,11 +65,17 @@ class ViewCategoryRegister(object):
 
 @implementer(IViewRegister)
 class ViewRegister(object):
-    def __init__(self, name, view, **kwargs):
+    def __init__(self, name, view, parent=None, **kwargs):
+        self.parent = parent
         self.name = name
         self.view = view
         self.kwargs = kwargs
         self.callback = None
+
+    @reify
+    def fullname(self):
+        return "{self.parent.fullname}.{self.name}".format(self=self)
+
 
     def register(self, callback):
         self.callback = callback
@@ -71,7 +87,14 @@ class ViewRegister(object):
         else:
             view = self.view
         config.add_view(view, route_name=route_name, **self.kwargs)
-        logger.debug("registering.. view=%s, route=%s", self.view, route_name)
+
+        discriminator = "{}.{}".format(self.fullname, nameof(Model))
+        desc = "view for Target={}".format(nameof(Model))
+        intr = config.introspectable("komets", discriminator, desc, "komet")
+        intr["Target"] = Model
+        intr["options"] = options
+        config.action(None, introspectables=[intr])
+        logger.debug("registering... route=%s, view=%s", route_name, self.view)
 
 _RegisterRepository = namedtuple("RegisterRepository", "view_category_set, view_category, view")
 RegisterRepository = implementer(IRegisterRepository)(_RegisterRepository)
@@ -92,7 +115,7 @@ class ViewCategorySetRegisterProxy(_RegisterProxy):
     def define_view_category(self, name, patten_create, route_name_create, **kwargs):
         parent = self.core
         factory = self.repository.view_category
-        child = factory(name, patten_create, route_name_create, **kwargs)
+        child = factory(name, patten_create, route_name_create, parent=parent, **kwargs)
         parent.register(child)
         yield ViewCategoryRegisterProxy(child, self.repository)
 
@@ -101,6 +124,7 @@ class ViewCategoryRegisterProxy(_RegisterProxy):
     def define_view(self, *args, **kwargs):
         parent = self.core
         factory = self.repository.view
+        kwargs["parent"] = parent
         child = factory(*args, **kwargs)
         parent.register(child)
         yield ViewRegisterProxy(child, self.repository)
@@ -109,7 +133,7 @@ class ViewRegisterProxy(_RegisterProxy):
     def register(self, callback=None):
         self.core.register(callback)
 
-class ViewRegisteringBuilder(object):
+class RegisteringBuilder(object):
     RegisterProxy = ViewCategorySetRegisterProxy
     def __init__(self, config, name, resource_factory):
         self.config = config
@@ -130,6 +154,13 @@ class ViewRegisteringBuilder(object):
         self.view_category_set(config, Model, options=options)
 
 
+def view_registering_builder(config, name, resource_factory):
+    builder = config.registry.queryUtility(IViewCategorySetBuilder, name=name)
+    if builder is None:
+        builder = RegisteringBuilder(config, name, resource_factory)
+        config.registry.registerUtility(builder, IViewCategorySetBuilder, name=name)
+    return builder
+
 def includeme(config, name=""):
     repo = RegisterRepository(
         view_category_set=ViewCategorySetRegister,
@@ -139,4 +170,4 @@ def includeme(config, name=""):
     config.registry.registerUtility(repo, IRegisterRepository, name=name)
 
     ## install view registering builder
-    config.add_directive("view_registering_builder", ViewRegisteringBuilder)
+    config.add_directive("view_registering_builder", view_registering_builder)
