@@ -91,9 +91,7 @@ def simple_commit_tween(handler, registry): #todo:fix
 def main(global_config, prefix="demo.main.", **settings):
     config = Configurator(settings=settings)
     config.include("block.komet.mapping.install_python_mapping")
-    config.include("block.komet.pyramid.registering")
-    config.include("block.komet.pyramid.resources")
-    config.include("block.komet.pyramid.validation")
+    config.include("block.komet.pyramid")
     config.include(setup_database)
     config.include(setup_views)
     config.include(setup_validations)
