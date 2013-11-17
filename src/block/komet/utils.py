@@ -30,6 +30,22 @@ def get_support_options(cls):
         return {}
     return cls._support_options
 
+def checked_suported_options(options, supported_options, category, Error=Exception):
+    try:
+        available_options = supported_options[category]
+    except KeyError:
+        fmt = "category '{}' is not supported. (available categories = {})"
+        raise Error(fmt.format(category, tuple(supported_options.keys())))
+
+    enable_options = {}
+    for k, v in options.get(category, {}).items():
+        if not k in available_options:
+            fmt = "option '{}' is not supported, in category={}. (available options = {})"
+            raise Error(fmt.format(k, category, available_options))
+        enable_options[k] = v
+    return enable_options
+
+
 def normalize_registry(request_or_registry):
     if hasattr(request_or_registry, "registry"):
         return request_or_registry.registry

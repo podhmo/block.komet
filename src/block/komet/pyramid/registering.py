@@ -14,7 +14,10 @@ from collections import namedtuple
 import contextlib
 from pyramid.decorator import reify
 from pyramid.exceptions import ConfigurationError
-from ..utils import nameof
+from ..utils import (
+    nameof,
+    checked_suported_options
+)
 
 @implementer(IViewCategorySetRegister)
 class ViewCategorySetRegister(object):
@@ -31,18 +34,11 @@ class ViewCategorySetRegister(object):
         self.registers.append(register)
 
     def get_supported_options(self, options, category):
-        try:
-            available_options = self.resource_factory.available_options[category]
-        except KeyError:
-            fmt = "category '{}' is not supported. (available categories = {})"
-            raise ConfigurationError(fmt.format(category, tuple(self.resource_factory.available_options.keys())))
-        enable_options = {}
-        for k, v in options.get(category, {}).items():
-            if not k in available_options:
-                fmt = "option '{}' is not supported, in category={}. (available options = {})"
-                raise ConfigurationError(fmt.format(k, category, available_options))
-            enable_options[k] = v
-        return enable_options
+        return checked_suported_options(
+            options,
+            self.resource_factory.available_options,
+            category,
+            ConfigurationError)
 
     def __call__(self, config, Model, options):
         # logger.info(". options %s", options)
