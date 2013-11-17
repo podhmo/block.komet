@@ -40,7 +40,7 @@ def setup_views(config):
     mapping = get_mapping_function_factory(config, name="python")
     installer = config.maybe_dotted("block.komet.pyramid.examples.sqla.install_komet_resource")
     komet_resource_factory = installer(config, session_factory, mapping, name="komet")
-    builder = config.view_registering_builder(komet_resource_factory)
+    builder = config.view_registering_builder("api", komet_resource_factory)
     vcs = builder.view_category_set
     config.maybe_dotted("block.komet.pyramid.examples.sqla.detail_view_category")(vcs)
     config.maybe_dotted("block.komet.pyramid.examples.sqla.list_view_category")(vcs)

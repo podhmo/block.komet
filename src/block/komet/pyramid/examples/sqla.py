@@ -36,14 +36,14 @@ def list_view_category(vcs):
     def route_name_fn(Model):
         return "{}.index".format(nameof(Model).lower())
 
-    with vcs.define_view_category(pattern_fn, route_name_fn) as vc:
+    with vcs.define_view_category("index", pattern_fn, route_name_fn) as vc:
         def parsing(request):
             return request.GET
-        vc.define_view(OneModelListingViewFactory(parsing), renderer="json")
+        vc.define_view("list", OneModelListingViewFactory(parsing), renderer="json")
 
         def parsing(request):
             return request.POST #todo: validation
-        vc.define_view(OneModelCreationViewFactory(parsing), request_method="POST", renderer="json")
+        vc.define_view("create", OneModelCreationViewFactory(parsing), request_method="POST", renderer="json")
 
 def detail_view_category(vcs):
     def pattern_fn(Model):
@@ -52,15 +52,15 @@ def detail_view_category(vcs):
     def route_name_fn(Model):
         return "{}.detail".format(nameof(Model).lower())
 
-    with vcs.define_view_category(pattern_fn, route_name_fn) as vc:
+    with vcs.define_view_category("detail", pattern_fn, route_name_fn) as vc:
         def parsing(request):
             return request.matchdict["id"]
-        vc.define_view(OneModelViewFactory(parsing), request_method="GET", renderer="json")
+        vc.define_view("info", OneModelViewFactory(parsing), request_method="GET", renderer="json")
 
         def parsing(request):
             return request.matchdict["id"], request.POST
-        vc.define_view(OneModelUpdatingViewFactory(parsing), request_method="POST", renderer="json")
+        vc.define_view("update", OneModelUpdatingViewFactory(parsing), request_method="POST", renderer="json")
 
         def parsing(request):
             return request.matchdict["id"]
-        vc.define_view(OneModelDeletingViewFactory(parsing), request_method="DELETE", renderer="json")
+        vc.define_view("delete", OneModelDeletingViewFactory(parsing), request_method="DELETE", renderer="json")
