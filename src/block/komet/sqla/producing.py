@@ -5,8 +5,10 @@ logger = logging.getLogger(__name__)
 from zope.interface import implementer
 from ..interfaces import IProducing
 from ..exceptions import NotFoundFailure
+from ..utils import define_support_options
 
 @implementer(IProducing)
+@define_support_options(order_by="qs.order_by(<>)", limit="qs.limit(<>)")
 class ModelProducing(object):
     def __init__(self, session, Model):
         self.session = session

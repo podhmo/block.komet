@@ -12,6 +12,7 @@ from block.komet.pyramid.resources import (
 )
 from block.komet.utils import nameof
 
+
 def install_komet_resource(config, session_factory, mapping, name=""):
     config.include("block.komet.pyramid.resources")
     walking = MapperWalking(ColumnsWalkingTemplate, mapping)
@@ -42,7 +43,7 @@ def list_view_category(vcs, name):
         with vc.define_view("list", OneModelListingViewFactory, renderer="json") as v:
             @v.register
             def callback(view_factory, Model, options):
-                query_options = options.get("query", {})
+                query_options = vcs.get_supported_options(options, "producing")
                 return view_factory(parsing_get, query_options)
 
         def parsing_post(request):

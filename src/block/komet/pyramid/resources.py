@@ -14,6 +14,8 @@ from .interfaces import IResourceFactory
 from block.komet.exceptions import NotFoundFailure
 from ..utils import nameof
 from ..utils import provided_chain
+from ..utils import get_support_options
+
 
 @implementer(IResourceFactory)
 class KometResourceFactory(object):
@@ -22,7 +24,12 @@ class KometResourceFactory(object):
         self.walking = walking
         self.session_factory = session_factory
 
+    @reify
+    def available_options(self):
+        return {k: get_support_options(getattr(self, k)) for k in ["producing", "walking"]}
+
     def __call__(self, Model):
+        logger.info("available.. {}".format(self.available_options))
         return partial(KommetResource, self, Model)
 
 class KommetResource(object):

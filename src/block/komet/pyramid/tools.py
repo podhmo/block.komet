@@ -7,8 +7,14 @@ from pyramid.interfaces import IViewClassifier
 from pyramid.interfaces import IView
 from zope.interface import Interface
 from ..utils import nameof
+import sys
 
-def proutes(config, use_fn=logger.info):
+def perror(*args):
+    for e in args:
+        sys.stderr.write(e)
+    sys.stderr.write("\n")
+
+def proutes(config, use_fn=perror):
     mapper = config.get_routes_mapper()
     registry = config.registry
     if mapper is not None:
@@ -35,7 +41,7 @@ def proutes(config, use_fn=logger.info):
                     IView, name='', default=None)
                 use_fn(fmt % (route.name, pattern, view_callable))
 
-def pkomets(config, use_fn=logger.info): #todo.rename
+def pkomets(config, use_fn=perror): #todo.rename
     fmt = '%-20s %-45s'
     komets = config.registry.introspector.get_category("komets", sort_key=lambda x: x["Target"].__name__)
     if not komets:
@@ -44,8 +50,9 @@ def pkomets(config, use_fn=logger.info): #todo.rename
     intrs = (k["introspectable"] for k in komets)
     import itertools
     for (g, vs) in itertools.groupby(intrs, lambda x: x["Target"]):
-        use_fn("%-10s------------------------------", nameof(g))
+        use_fn("------------------------------------------------------------")
+        use_fn("%s::" % nameof(g))
         use_fn(fmt % ('Name', 'Options'))
         use_fn(fmt % ('-'*len('Name'), '-'*len('Options')))
         for intr in vs:
-            use_fn(fmt, intr.discriminator, intr["options"])
+            use_fn(fmt % (intr.discriminator, intr["options"]))

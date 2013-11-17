@@ -17,6 +17,19 @@ import itertools
 def provided_chain(*xs):
     return itertools.chain.from_iterable((normalize_provided1(x) for x in xs))
 
+def define_support_options(**kwargs):
+    def _wrapped(cls):
+        if not hasattr(cls, "_support_options"):
+            cls._support_options = {}
+        cls._support_options.update(kwargs)
+        return cls
+    return _wrapped
+
+def get_support_options(cls):
+    if not hasattr(cls, "_support_options"):
+        return {}
+    return cls._support_options
+
 def normalize_registry(request_or_registry):
     if hasattr(request_or_registry, "registry"):
         return request_or_registry.registry

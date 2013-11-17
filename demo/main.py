@@ -17,13 +17,6 @@ class User(Base):
     created_at = sa.Column(sa.DateTime, default=datetime.now)
     updated_at = sa.Column(sa.DateTime, onupdate=datetime.now, default=datetime.now)
 
-class Item(Base):
-    __tablename__ = "items"
-    id = sa.Column(sa.Integer(), primary_key=True, nullable=False)
-    name = sa.Column(sa.String(255), unique=True, nullable=False)
-    created_at = sa.Column(sa.DateTime, default=datetime.now)
-    updated_at = sa.Column(sa.DateTime, onupdate=datetime.now, default=datetime.now)
-
 from pyramid.config import Configurator
 
 def setup_database(config):
@@ -58,8 +51,7 @@ def setup_views(config):
     list_view_category(vcs, name="list")
 
     ## todo:available options
-    builder.build(config, User, {"list": {"list": {"query": {"order_by": "id desc"}}}})
-    builder.build(config, Item)
+    builder.build(config, User, {"list": {"list": {"producing": {"order_by": "id desc"}}}})
 
 
 def setup_validation_executor(config):

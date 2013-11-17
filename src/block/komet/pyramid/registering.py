@@ -13,6 +13,7 @@ from .interfaces import (
 from collections import namedtuple
 import contextlib
 from pyramid.decorator import reify
+from pyramid.exceptions import ConfigurationError
 from ..utils import nameof
 
 @implementer(IViewCategorySetRegister)
@@ -28,6 +29,20 @@ class ViewCategorySetRegister(object):
 
     def register(self, register): #todo:options?
         self.registers.append(register)
+
+    def get_supported_options(self, options, category):
+        try:
+            available_options = self.resource_factory.available_options[category]
+        except KeyError:
+            fmt = "category '{}' is not supported. (available categories = {})"
+            raise ConfigurationError(fmt.format(category, tuple(self.resource_factory.available_options.keys())))
+        enable_options = {}
+        for k, v in options.get(category, {}).items():
+            if not k in available_options:
+                fmt = "option '{}' is not supported, in category={}. (available options = {})"
+                raise ConfigurationError(fmt.format(k, category, available_options))
+            enable_options[k] = v
+        return enable_options
 
     def __call__(self, config, Model, options):
         # logger.info(". options %s", options)
@@ -54,7 +69,6 @@ class ViewCategoryRegister(object):
 
 
     def __call__(self, config, Model, resource, options):
-        # logger.info(".. options %s", options)
         route_name = self.route_name_create(Model)
         pattern = self.pattern_create(Model)
         config.add_route(route_name, pattern=pattern, factory=resource)
@@ -81,7 +95,6 @@ class ViewRegister(object):
         self.callback = callback
 
     def __call__(self, config, Model, route_name, options):
-        # logger.info("... options %s", options)
         if self.callback:
             view = self.callback(self.view, Model, options)
         else:
