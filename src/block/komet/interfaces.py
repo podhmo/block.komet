@@ -1,5 +1,6 @@
 # -*- coding:utf-8 -*-
 from zope.interface import Interface
+from zope.interface import Attribute
 
 class IWalking(Interface):
     def __call__(target):
@@ -25,12 +26,21 @@ class IRegistering(Interface):
     def register(name, **kwargs):
         pass
 
-
 class IMapping(Interface):
     def __call__(target):
         pass
 
 class ITarget(Interface):
+    pass
+
+## validation
+class IDisplayMessage(Interface):
+    def __call__(subject):
+        pass
+
+class IFailure(Interface):
+    pass
+class IHasMessage(Interface):
     pass
 
 ## types

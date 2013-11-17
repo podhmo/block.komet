@@ -47,3 +47,24 @@ class FunctionalTests(unittest.TestCase):
         ## detail (after deleted)
         self.testapp.get('/api/users/1', status=404)
 
+    def test_validation_error__unique(self):
+        ## create
+        response = self.testapp.post('/api/users', {"name": "*new user*"}, status=200)
+        self.assertEqual(response.json["status"], True)
+
+        ## create with same name
+        response = self.testapp.post('/api/users', {"name": "*new user*"}, status=200)
+        self.assertEqual(response.json["status"], False)
+        self.assertIn("*new user* is conflict", response.json["message"])
+
+        ## create
+        response = self.testapp.post('/api/users', {"name": "another"}, status=200)
+        self.assertEqual(response.json["status"], True)
+
+        ## create with same name
+        response = self.testapp.post('/api/users/1', {"name": "another"}, status=200)
+        self.assertEqual(response.json["status"], False)
+        self.assertIn("another is conflict", response.json["message"])
+
+
+

@@ -1,14 +1,25 @@
 # -*- coding:utf-8 -*-
 import logging
 logger = logging.getLogger(__name__)
+import venusian
 from zope.interface import (
+    implementedBy,
+    providedBy,
     implementer,
     provider
 )
-from .interfaces import IValidationGenerator
-from ..interfaces import IValidating
+from ..interfaces import (
+    IValidating,
+    IDisplayMessage,
+    IFailure,
+    IHasMessage
+)
+
+from ..utils import nameof
 from ..exceptions import ValidationFailure
 from ..exceptions import BadData
+
+from .interfaces import IValidationGenerator
 
 @provider(IValidationGenerator)
 def _sample_validation_generator(request, kwargs):
@@ -48,10 +59,11 @@ class ValidationQueue(object):
             yield name, v_fn(request, kwargs)
 
 def append_error_handler(request, errors, name, e):
+    message = get_display_message(request, e) #todo error handling
     if name in errors:
-        errors[name].append(e.args[0]) #todo error handling
+        errors[name].append(message)
     else:
-        errors[name] = [e.args[0]]
+        errors[name] = [message]
 
 def message_from_errors(errors):
     r = []
@@ -94,5 +106,42 @@ class ValidationExecuter(object):
         return self.handle_result(status, data, errors, first_error)
 
 
-def validation_config(parsing):
-    pass
+def get_display_message(request, exception):
+    adapters = request.registry.adapters
+    fn = adapters.lookup1(providedBy(exception), IDisplayMessage, name=nameof(exception.__class__))
+    fn = fn or adapters.lookup1(providedBy(exception), IDisplayMessage, name="")
+    return fn(exception)
+
+def default_message(exception):
+    ## display stack trace?
+    return repr(exception)
+
+def message(message):
+    return message.message
+
+def add_display_message(config, exception, message):
+    implementer(IFailure)(exception) #xxx:
+    def register_display_message():
+        adapters = config.registry.adapters
+        adapters.register([IFailure], IDisplayMessage, nameof(exception), message)
+
+    discriminator = exception
+    desc = "human redable message for {}".format(nameof(exception))
+    introspectables = [
+        config.introspectable('display_messages', discriminator, desc, 'display_message')
+    ]
+    config.action(discriminator, register_display_message, introspectables=introspectables)
+
+def display_message_config(exception):
+    def _wrapped(message_fn):
+        def callback(context, name, ob):
+            config = context.config.with_package(info.module)
+            config.add_display_message(exception, message_fn)
+        info = venusian.attach(message_fn, callback, category='pyramid') #xxx:
+        return message_fn
+    return _wrapped
+
+def includeme(config):
+    config.add_directive("add_display_message", add_display_message)
+    config.registry.adapters.register([IFailure], IDisplayMessage, "", default_message)
+    config.registry.adapters.register([IHasMessage], IDisplayMessage, "", message)

@@ -46,6 +46,7 @@ def setup_views(config):
     config.maybe_dotted("block.komet.pyramid.examples.sqla.list_view_category")(vcs)
     builder.build(config, User)
 
+
 def setup_validations(config):
     from block.komet.pyramid.interfaces import ICreating, IUpdating
     from block.komet.interfaces import IValidating
@@ -53,13 +54,20 @@ def setup_validations(config):
     from block.komet.pyramid.validation import ValidationQueue, ValidationExecuter
     from block.komet.exceptions import BadData
     from pyramid.interfaces import IRequest
+
+    class UniqueNameConflict(BadData):
+        pass
+    def unique_name_conflict(e):
+        return "name: {} is conflict.".format(e.args[0])
+    config.add_display_message(UniqueNameConflict, unique_name_conflict)
+
     adapters = config.registry.adapters
     def unique_name(data, session, id):
         qs = session.query(User).filter_by(name=data["name"])
         if id:
             qs = qs.filter(User.id != id)
         if qs.count() > 0:
-            raise BadData(data)
+            raise UniqueNameConflict(data["name"])
     vq = ValidationQueue().add("name", unique_name, pick=lambda r, d, e: {"session": e["session"], "id": e.get("id")})
     validation = ValidationExecuter(vq)
 
@@ -78,11 +86,13 @@ def main(global_config, prefix="demo.main.", **settings):
     config.include("block.komet.mapping.install_python_mapping")
     config.include("block.komet.pyramid.registering")
     config.include("block.komet.pyramid.resources")
+    config.include("block.komet.pyramid.validation")
     config.include(setup_database)
     config.include(setup_views)
     config.include(setup_validations)
     ## buggy
     config.add_tween("{prefix}simple_commit_tween".format(prefix=prefix))
+    config.scan(".")
     config.commit()
     from block.komet.pyramid.tools import proutes
     proutes(config)
