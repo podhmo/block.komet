@@ -19,7 +19,10 @@ from ..utils import nameof
 from ..exceptions import ValidationFailure
 from ..exceptions import BadData
 
-from .interfaces import IValidationGenerator
+from .interfaces import (
+    IValidationGenerator,
+    IValidationExecutorFactory
+)
 
 @provider(IValidationGenerator)
 def _sample_validation_generator(request, kwargs):
@@ -173,7 +176,19 @@ def display_message_config(exception):
         return message_fn
     return _wrapped
 
+def add_validation_executor(config, executor_factory):
+    config.registry.registerUtility(executor_factory, IValidationExecutorFactory)
+
+def add_validation(config, required, target, validation_queue):
+    def register():
+        executor_factory = config.registry.getUtility(IValidationExecutorFactory)
+        validation = executor_factory(validation_queue)
+        config.registry.adapters.register(required, IValidating, nameof(target), validation)
+    config.action(None,  register)
+
 def includeme(config):
     config.add_directive("add_display_message", add_display_message)
+    config.add_directive("add_validation_executor", add_validation_executor)
+    config.add_directive("add_validation", add_validation)
     config.registry.adapters.register([IFailure], IDisplayMessage, "", default_message)
     config.registry.adapters.register([IHasMessage], IDisplayMessage, "", message)

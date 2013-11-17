@@ -35,6 +35,9 @@ class IRegisterRepository(Interface):
 class IValidationGenerator(Interface):
     def __call__(request, kwargs):
         pass
+class IValidationExecutorFactory(Interface):
+    def __call__(*args, **kwargs):
+        pass
 
 class IDataValidation(Interface):
     def __call__(request, data, errors, **kwargs):
