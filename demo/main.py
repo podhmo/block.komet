@@ -53,7 +53,6 @@ def setup_validations(config):
     from block.komet.utils import nameof
     from block.komet.pyramid.validation import ValidationQueue, ValidationExecuter
     from block.komet.exceptions import BadData
-    from pyramid.interfaces import IRequest
 
     class UniqueNameConflict(BadData):
         pass
@@ -71,8 +70,8 @@ def setup_validations(config):
     vq = ValidationQueue().add("name", unique_name, pick=lambda r, d, e: {"session": e["session"], "id": e.get("id")})
     validation = ValidationExecuter(vq)
 
-    adapters.register([ICreating, IRequest], IValidating, nameof(User), validation)
-    adapters.register([IUpdating, IRequest], IValidating, nameof(User), validation)
+    adapters.register([ICreating], IValidating, nameof(User), validation)
+    adapters.register([IUpdating], IValidating, nameof(User), validation)
 
 def simple_commit_tween(handler, registry): #todo:fix
     def tween(request):
