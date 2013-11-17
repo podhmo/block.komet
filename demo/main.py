@@ -92,7 +92,7 @@ def main(global_config, prefix="demo.main.", **settings):
     config.include(setup_validations)
     ## buggy
     config.add_tween("{prefix}simple_commit_tween".format(prefix=prefix))
-    config.scan(".")
+    config.scan(prefix.rstrip(".") if prefix != "." else ".")
     config.commit()
     from block.komet.pyramid.tools import proutes
     proutes(config)
