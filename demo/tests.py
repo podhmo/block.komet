@@ -55,7 +55,7 @@ class FunctionalTests(unittest.TestCase):
         ## create with same name
         response = self.testapp.post('/api/users', {"name": "*new user*"}, status=200)
         self.assertEqual(response.json["status"], False)
-        self.assertIn("*new user* is conflict", response.json["message"])
+        self.assertEqual(response.json["message"], {'name': ['name: *new user* is conflict.']})
 
         ## create
         response = self.testapp.post('/api/users', {"name": "another"}, status=200)
@@ -64,7 +64,7 @@ class FunctionalTests(unittest.TestCase):
         ## create with same name
         response = self.testapp.post('/api/users/1', {"name": "another"}, status=200)
         self.assertEqual(response.json["status"], False)
-        self.assertIn("another is conflict", response.json["message"])
+        self.assertEqual(response.json["message"], {'name': ['name: another is conflict.']})
 
 
 

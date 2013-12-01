@@ -7,8 +7,10 @@ import sqlalchemy as sa
 import sqlalchemy.orm as orm
 from sqlalchemy.ext.declarative import declarative_base
 from datetime import datetime
+from block.form.validation import validation_repository_factory
 Session = orm.sessionmaker()
 Base = declarative_base()
+validation = validation_repository_factory()
 
 class User(Base):
     __tablename__ = "users"
@@ -54,39 +56,26 @@ def setup_views(config):
     builder.build(config, User, {"list": {"list": {"producing": {"order_by": "id desc"}}}})
 
 
-def setup_validation_executor(config):
-    from block.komet.pyramid.validation import ValidationExecuter
-    def handle_request(request, kwargs):
-        kwargs["session"] = request.context.session
-        return kwargs
-    def create_executor(vq):
-        return ValidationExecuter(vq,
-                                  handle_request=handle_request,
-                                  CatchError=Exception)
-    config.add_validation_executor(create_executor)
-
 def setup_validations(config):
+    config.block_set_validation_repository(validation)
     from block.komet.pyramid.interfaces import ICreating, IUpdating
-    from block.komet.pyramid.validation import ValidationQueue, with_pick
+    from block.komet.utils import nameof
 
     class UniqueNameConflict(Exception):
         pass
-    def unique_name_conflict(e):
-        return "name: {} is conflict.".format(e.args[0])
 
-    @with_pick(positionals=["session"], optionals=["id"])
+    config.block_add_error_mapping({
+        UniqueNameConflict: "name: {} is conflict."
+    })
+
+    @validation.config((ICreating, nameof(User)), "name", positionals=["session"], optionals=["id"])
+    @validation.config((IUpdating, nameof(User)), "name", positionals=["session"], optionals=["id"])
     def unique_name(data, session, id=None):
         qs = session.query(User).filter_by(name=data["name"])
         if id:
             qs = qs.filter(User.id != id)
         if qs.count() > 0:
             raise UniqueNameConflict(data["name"])
-
-    vq = ValidationQueue().add("name", unique_name)
-
-    config.add_display_message(UniqueNameConflict, unique_name_conflict)
-    config.add_validation([ICreating], User, vq)
-    config.add_validation([IUpdating], User, vq)
 
 def simple_commit_tween(handler, registry): #todo:fix
     def tween(request):
@@ -102,7 +91,7 @@ def main(global_config, prefix="demo.main.", **settings):
     config.include(setup_database)
     config.include(setup_views)
     config.include(setup_validations)
-    config.include(setup_validation_executor)
+
     ## buggy
     config.add_tween("{prefix}simple_commit_tween".format(prefix=prefix))
     config.scan(prefix.rstrip(".") if prefix != "." else ".")

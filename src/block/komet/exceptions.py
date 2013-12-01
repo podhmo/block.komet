@@ -3,6 +3,7 @@ import logging
 logger = logging.getLogger(__name__)
 from zope.interface import implementer
 from .interfaces import IFailure, IHasMessage
+from block.form.validation import ValidationError
 
 ## todo: refine
 @implementer(IFailure)
@@ -14,6 +15,9 @@ class UpdatingFailure(Exception):
 @implementer(IFailure)
 class DelitingFailure(Exception):
     pass
+
+ValidationFailure = implementer(IFailure)(ValidationError)
+
 @implementer(IFailure)
 class NotFoundFailure(Exception):
     pass
@@ -21,12 +25,3 @@ class NotFoundFailure(Exception):
 @implementer(IFailure)
 class BadData(Exception):
     pass
-
-@implementer(IHasMessage)
-class ValidationFailure(Exception):
-    def __init__(self, message, original):
-        self.message = message
-        self.original = original
-
-    def __str__(self):
-        return self.message
